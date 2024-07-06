@@ -26,16 +26,14 @@ def parse_product_page(url: str, site_config: WebsiteConfig) -> ProductData:
     prices = parse_prices(soup, site_config)
     spec_tables = parse_tables(soup, site_config)
     images = parse_lv(soup, site_config.product.images)
-    description_bs4 = soup.select_one(site_config.product.description_selector)
-    if description_bs4 is None:
-        raise ProductInfoSelectorError(site_config.product.description_selector)
+    description = soup.select_one(site_config.product.description_selector)
     product_data = ProductData(
         title = title,
         prices = prices,
         key_features = key_f,
         images = images,
         spec_tables = spec_tables,
-        description = description_bs4.decode_contents() if description_bs4 else ''
+        description = description.decode_contents() if description else ''
     )
     return product_data
     

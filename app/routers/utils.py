@@ -59,8 +59,9 @@ async def crawl_urls(manager: TaskManager, urls: List[str], site_config: Website
                 data = parse_product_page(url, site_config)
             except Exception as e:
                 await manager.lognow(Log(str(e)))
+                continue
             await manager.lognow(Log(f'Data parsed for url: {url}'))
-            if count == 10:
+            if count == 2:
                 break
             count += 1
         await manager.finish_task()
