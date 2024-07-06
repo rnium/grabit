@@ -1,0 +1,26 @@
+services:
+  db:
+    restart: always
+    image: postgres:15-alpine
+    container_name: Postgres
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+  app:
+    restart: always
+    image: grabit
+    container_name: App
+    volumes:
+      - .:/app
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - 7000:8000
+    depends_on:
+      - db

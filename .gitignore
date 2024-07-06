@@ -1,0 +1,8 @@
+.idea
+__pycache__
+venv/
+local_settings.py
+sites.yaml
+db.sqlite3
+pgdata
+.env
