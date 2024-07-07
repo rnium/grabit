@@ -42,11 +42,16 @@ class WebsiteConfig(BaseModel):
 
 def create_config(site_data) -> WebsiteConfig:
     product_config: dict = site_data['product']
+    formatter_name = product_config.get('price_formatter')
+    if not formatter_name:
+        formatter_name = 'common_formatter'
+    else:
+        product_config.pop('price_formatter')
     site_product = Product(
         key_feature = KeyFeatures(**product_config.pop('key_feature')),
         spec_table = SpecTable(**product_config.pop('spec_table')),
         images = ListValues(**product_config.pop('images')),
-        price_formatter = FORMATTER_MAPPING[product_config.pop('price_formatter')],
+        price_formatter = FORMATTER_MAPPING[formatter_name],
         **product_config
     )
     return WebsiteConfig(

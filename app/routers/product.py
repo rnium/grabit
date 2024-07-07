@@ -81,7 +81,7 @@ async def start_crawl(db: DbDependency, user: UserDependency, url: BodyUrlDepend
     except TaskManagerBusy as e:
         return HTTPException(400, str(e))
     
-    bgtask.add_task(crawl_urls, manager, prod_urls, site_config)
+    bgtask.add_task(crawl_urls, manager, user, prod_urls, site_config)
 
 
 @router.websocket('/taskstatus')

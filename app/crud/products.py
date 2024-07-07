@@ -1,11 +1,13 @@
 from sqlalchemy.orm import Session
 from app.models import Product, User
+from app.schemas.product import ProductData
 from fastapi import HTTPException
 from datetime import datetime, timezone
 import json
 
 
 def add_product(db: Session, site: str, user: User, url: str):
+    # Initiates product without data
     prev_prod = db.query(Product).filter(Product.url == url).first()
     if prev_prod:
         return prev_prod
@@ -15,6 +17,14 @@ def add_product(db: Session, site: str, user: User, url: str):
     db.refresh(product_obj)
     return product_obj
 
+
+def add_product_data(db: Session, product: Product, prod_data: ProductData):
+    product.title = prod_data.title
+    product.data = prod_data.model_dump_json()
+    product.is_complete = True
+    db.commit()
+    db.refresh(product)
+    return product
 
 def get_products(db: Session):
     return db.query(Product).all()

@@ -6,19 +6,17 @@ from app.scraping.product_page_parser import parse_product_page
 from app.scraping.website_schema import WebsiteConfig
 from app.scraping.websites import get_site_config
 from app.config.database import SessionLocal
-from app.crud.products import add_product, get_product_from_url
+from app.crud.products import add_product, add_product_data, get_product_from_url
 from sqlalchemy.orm import Session
 from ..utils.exceptions.site_exceptions import UnSupportedSiteError, NotAProductError
 from ..utils.task_manager import TaskManager, Log
 from app.config.database import SessionLocal
+import asyncio
 
 
-def grab_data(db: Session, product: Product, site_config: WebsiteConfig):
+def grab_and_add_data(db: Session, product: Product, site_config: WebsiteConfig):
     prod_data = parse_product_page(product.url, site_config)
-    product.title = prod_data.title
-    product.data = prod_data.model_dump_json()
-    product.is_complete = True
-    db.commit()
+    add_product_data(db, product, prod_data)
 
 
 def initiate_and_grab_data(db: Session, user: User, url: str) -> Product:
@@ -30,7 +28,7 @@ def initiate_and_grab_data(db: Session, user: User, url: str) -> Product:
     if not site_config:
         raise UnSupportedSiteError()
     prod = add_product(db, site_config.sitename, user, url)
-    grab_data(db, prod, site_config)
+    grab_and_add_data(db, prod, site_config)
     return prod
 
 
@@ -51,17 +49,26 @@ def run_url(url: str, save=False):
     return response
 
 
-async def crawl_urls(manager: TaskManager, urls: List[str], site_config: WebsiteConfig):
+async def crawl_urls(manager: TaskManager, user, urls: List[str], site_config: WebsiteConfig):
     with SessionLocal() as db:
         count = 0
         for url in urls:
+            if count == 10:
+                break
+            count += 1
+            prev_product = db.query(Product).filter(Product.url == url).first()
+            if prev_product:
+                await asyncio.sleep(0.1)
+                await manager.lognow(Log(f'Page aready scraped for url: {url}'))
+                continue
             try:
                 data = parse_product_page(url, site_config)
+                product = add_product(db, site_config.sitename, user, url)
+                add_product_data(db, product, data)
             except Exception as e:
                 await manager.lognow(Log(str(e)))
                 continue
-            await manager.lognow(Log(f'Data parsed for url: {url}'))
-            if count == 2:
-                break
-            count += 1
+            await manager.lognow(Log(f'Data scraped and saved for url: {url}'))
+            
+            
         await manager.finish_task()

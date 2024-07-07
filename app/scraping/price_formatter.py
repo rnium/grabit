@@ -1,3 +1,4 @@
+import re
 taka_sign = '৳'
 
 def common_formatter(raw_price: str):
@@ -5,7 +6,9 @@ def common_formatter(raw_price: str):
     for c in raw_price:
         if not c.isdigit() and c != '.':
             price_str = price_str.replace(c, '')
-    return float(price_str)
+    p = re.compile(r'(\d+(\.\d*)?|\.\d+)')
+    mat = p.search(price_str)
+    return float(mat.group())
 
 def bd_price_formatter1(raw_price: str):
     # use case (startech): 66,500৳68,500৳ 
