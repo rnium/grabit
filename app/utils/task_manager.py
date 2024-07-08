@@ -1,21 +1,30 @@
 from datetime import datetime, timezone
-from typing import List, Any
+from typing import List, Any, Callable
 from fastapi import WebSocket, WebSocketDisconnect
 from app.utils.exceptions.logging_exceptions import TaskManagerBusy, TaskManagerOff
+import inspect
 import asyncio
+import enum
+
+class LogLevel(str, enum.Enum):
+    success = 'success'
+    warning = 'warning'
+    error = 'error'
 
 
 class Log:
-    def __init__(self, message: str, progress: float = 0):
+    def __init__(self, message: str, progress: float = 0, level: LogLevel = LogLevel.success):
         self.time = datetime.now(timezone.utc)
         self.message = message
         self.progress = progress
+        self.level = level
         
     @property
     def data(self):
         return {
             'time': self.time.isoformat(),
             'message': self.message,
+            'level': self.level,
             'progress': self.progress 
         }
 
@@ -26,28 +35,31 @@ class TaskManager:
         self.__start_time = None
         self.__connections: List[WebSocket] = []
         self.__log_queue = asyncio.Queue(100)
-        self.__task_argument = None
-    
+
     @property
-    def argument(self):
-        return self.__task_argument
-        
-    async def initiate_task(self, argument: Any):
-        if self.__is_running:
-            raise TaskManagerBusy()
+    def is_busy(self):
+        return self.__is_running
+
+    async def __initiate_task(self):
         self.__is_running = True
         self.__start_time = datetime.now(timezone.utc)
-        self.__task_argument = argument
         await self.add_log(Log('Task initiated'))
     
-    async def finish_task(self):
-        if not self.__is_running:
-            raise TaskManagerOff()
+    async def __finish_task(self):
         seconds_elapsed = (datetime.now(timezone.utc) - self.__start_time).total_seconds()
         self.__is_running = False
         self.__start_time = None
-        self.__task_argument = None
         await self.add_log(Log('Task finished in {} seconds'.format(seconds_elapsed)))
+    
+    async def execute_task(self, executable: Callable, *args, **kwargs):
+        if self.is_busy:
+            raise TaskManagerBusy
+        await self.__initiate_task()
+        if inspect.iscoroutinefunction(executable):
+            await executable(*args, *kwargs)
+        else:
+            executable(*args, *kwargs)
+        await self.__finish_task()
     
     def add_socket(self, socket: WebSocket):
         self.__connections.append(socket)
@@ -76,8 +88,8 @@ class TaskManager:
     
     async def add_log(self, log: Log):
         await self.__log_queue.put(log)
-        await asyncio.sleep(0.2)
         await self.send_logs()
+        await asyncio.sleep(0.2)
         
 
 

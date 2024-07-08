@@ -70,6 +70,8 @@ def add_product(db: DbDependency, user: UserDependency, url: BodyUrlDependency, 
         raise HTTPException(400, str(e))
     if created:
         bgtask.add_task(log_status, manager, Log(f"Product added for url: {url}"))
+    else:
+        raise HTTPException(400, 'Product already added to the database')
     return prod
 
 @router.post('/crawlxml')
@@ -78,12 +80,10 @@ async def start_crawl(db: DbDependency, user: UserDependency, url: BodyUrlDepend
         prod_urls, site_config = parse_sitemap_xml(str(url))
     except Exception as e:
         raise HTTPException(400, str(e))
-    try:
-        await manager.initiate_task(prod_urls)
-    except TaskManagerBusy as e:
-        return HTTPException(400, str(e))
-    
-    bgtask.add_task(crawl_urls, manager, user, prod_urls, site_config)
+    if manager.is_busy:
+        raise HTTPException(400, 'Taskmanager is busy')
+    bgtask.add_task(manager.execute_task, crawl_urls, manager, user, prod_urls, site_config)
+    return 'Crawling started'
 
 
 @router.websocket('/taskstatus')
