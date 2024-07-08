@@ -39,6 +39,11 @@ class TaskManager:
     @property
     def is_busy(self):
         return self.__is_running
+    
+    def stop_task(self):
+        if not self.is_busy:
+            raise TaskManagerOff()
+        self.__is_running = False
 
     async def __initiate_task(self):
         self.__is_running = True

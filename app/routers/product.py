@@ -85,6 +85,14 @@ async def start_crawl(db: DbDependency, user: UserDependency, url: BodyUrlDepend
     bgtask.add_task(manager.execute_task, crawl_urls, manager, user, prod_urls, site_config)
     return 'Crawling started'
 
+@router.get('/stoptask')
+def stop_task(user: UserDependency):
+    try:
+        manager.stop_task()
+    except Exception as e:
+        raise HTTPException(400, str(e))
+    return 'Task manager stopped'
+
 
 @router.websocket('/taskstatus')
 async def tws(socket: WebSocket):

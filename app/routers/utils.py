@@ -51,8 +51,9 @@ def run_url(url: str, save=False):
 
 async def crawl_urls(manager: TaskManager, user, urls: List[str], site_config: WebsiteConfig):
     with SessionLocal() as db:
-        count = 0
         for url in urls:
+            if not manager.is_busy:
+                return
             prev_product = db.query(Product).filter(Product.url == url).first()
             if prev_product:
                 await manager.add_log(Log(f'Page aready scraped for url: {url}', level=LogLevel.warning))
@@ -65,9 +66,6 @@ async def crawl_urls(manager: TaskManager, user, urls: List[str], site_config: W
                 await manager.add_log(Log(f'Error: {str(e)} | url: {url}', level=LogLevel.error))
                 continue
             await manager.add_log(Log(f'Data scraped and saved for url: {url}'))
-            if count == 4:
-                break
-            count += 1
 
 async def log_status(manager: TaskManager, log: Log):
     await manager.add_log(log)
