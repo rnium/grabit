@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import List, Any
 from fastapi import WebSocket, WebSocketDisconnect
 from app.utils.exceptions.logging_exceptions import TaskManagerBusy, TaskManagerOff
+import asyncio
 
 
 class Log:
@@ -24,6 +25,7 @@ class TaskManager:
         self.__is_running = False
         self.__start_time = None
         self.__connections: List[WebSocket] = []
+        self.__log_queue = asyncio.Queue(100)
         self.__task_argument = None
     
     @property
@@ -36,7 +38,7 @@ class TaskManager:
         self.__is_running = True
         self.__start_time = datetime.now(timezone.utc)
         self.__task_argument = argument
-        await self.lognow(Log('Task initiated'))
+        await self.add_log(Log('Task initiated'))
     
     async def finish_task(self):
         if not self.__is_running:
@@ -45,7 +47,7 @@ class TaskManager:
         self.__is_running = False
         self.__start_time = None
         self.__task_argument = None
-        await self.lognow(Log('Task finished in {} seconds'.format(seconds_elapsed)))
+        await self.add_log(Log('Task finished in {} seconds'.format(seconds_elapsed)))
     
     def add_socket(self, socket: WebSocket):
         self.__connections.append(socket)
@@ -58,16 +60,24 @@ class TaskManager:
             **log.data,
             'running': self.__is_running
         }
-    
-    async def lognow(self, log: Log):
-        removable_sockets = []
+
+    async def send_logs(self):
         if self.__connections:
-            for socket in self.__connections:
-                try:
-                    await socket.send_json(self.get_data(log))
-                except WebSocketDisconnect:
-                    removable_sockets.append(socket)
-        for socket in removable_sockets:
-            self.remove_socket(socket)
+            removable_sockets = []
+            while not self.__log_queue.empty():
+                log = await self.__log_queue.get()
+                for socket in self.__connections:
+                    try:
+                        await socket.send_json(self.get_data(log))
+                    except WebSocketDisconnect:
+                        removable_sockets.append(socket)
+            for socket in removable_sockets:
+                self.remove_socket(socket)
+    
+    async def add_log(self, log: Log):
+        await self.__log_queue.put(log)
+        await asyncio.sleep(0.2)
+        await self.send_logs()
+        
 
 

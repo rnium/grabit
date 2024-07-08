@@ -8,7 +8,7 @@ from app.scraping.parse_xml import parse_sitemap_xml
 from app.dependencies import UserDependency, BodyUrlDependency
 from app.crud import products as prod_crud
 from app.schemas import product as prod_schema
-from .utils import initiate_and_grab_data, run_url, crawl_urls
+from .utils import initiate_and_grab_data, run_url, crawl_urls, log_status
 from ..utils.task_manager import TaskManager, Log
 from ..utils.exceptions.site_exceptions import UnSupportedSiteError
 from app.utils.exceptions.logging_exceptions import TaskManagerBusy, TaskManagerOff
@@ -28,9 +28,9 @@ manager = TaskManager()
 async def sample_task():
     get_progress = lambda total, current: (current / total) * 100
     count = 1
-    for i in manager.argument:
+    for i in range(10):
         await asyncio.sleep(0.2)
-        await manager.lognow(Log(i, get_progress(len(manager.argument), count)))
+        await manager.add_log(Log(i, get_progress(len(manager.argument), count)))
         count += 1
     await manager.finish_task()
 
@@ -63,11 +63,13 @@ def test_run_using_product_url(url: Annotated[HttpUrl, Body()]):
 
 
 @router.post('/add', response_model=prod_schema.Product)
-def add_product(db: DbDependency, user: UserDependency, url: BodyUrlDependency):
+def add_product(db: DbDependency, user: UserDependency, url: BodyUrlDependency, bgtask: BackgroundTasks):
     try:
-        prod = initiate_and_grab_data(db, user, str(url))
+        prod, created = initiate_and_grab_data(db, user, str(url))
     except Exception as e:
         raise HTTPException(400, str(e))
+    if created:
+        bgtask.add_task(log_status, manager, Log(f"Product added for url: {url}"))
     return prod
 
 @router.post('/crawlxml')
@@ -88,6 +90,7 @@ async def start_crawl(db: DbDependency, user: UserDependency, url: BodyUrlDepend
 async def tws(socket: WebSocket):
     await socket.accept()
     manager.add_socket(socket)
+    await manager.send_logs()
     try:
         while True:
             await socket.receive_text()
