@@ -48,3 +48,10 @@ def get_product_from_url(db: Session, url: str):
 def get_product_data_from_url(db: Session, url: str):
     product = get_product_from_url(db, url)
     return json.loads(product.data) if product.data else None
+
+
+def search_product(db: Session, query):
+    products = db.query(Product).filter(Product.title.ilike(f"%{query}%")).all()
+    if not products:
+        raise HTTPException(404, 'Products not found with the given query')
+    return products

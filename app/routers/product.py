@@ -40,6 +40,11 @@ def get_all_products(db: DbDependency):
     return prod_crud.get_products(db)
 
 
+@router.get('/search', response_model=List[prod_schema.Product])
+def search_product(db: DbDependency, query: Annotated[str, Query()]):
+    return prod_crud.search_product(db, query)
+
+
 @router.get('/get/{pk}', response_model=prod_schema.Product)
 def get_product(db: DbDependency, pk: int):
     return prod_crud.get_product(db, pk)
