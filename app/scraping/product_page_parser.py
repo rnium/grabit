@@ -8,11 +8,11 @@ from app.models import Product
 from app.schemas.product import ProductData
 from app.utils.exceptions.site_exceptions import NotAProductError
 from app.utils.exceptions.selector_exceptions import ProductInfoSelectorError
-import requests
+from requests import Session
 
 
-def parse_product_page(url: str, site_config: WebsiteConfig) -> ProductData:
-    res = requests.get(url)
+def parse_product_page(url: str, site_config: WebsiteConfig, session: Session = Session()) -> ProductData:
+    res = session.get(url)
     content = res.text
     soup = BeautifulSoup(content, 'html.parser')
     if soup.select_one(site_config.product.main_selector) is None:

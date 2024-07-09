@@ -99,7 +99,7 @@ class TaskManager:
     async def add_log(self, log: Log):
         await self.__log_queue.put(log)
         await self.send_logs()
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(0.1)
         
 
 

@@ -12,6 +12,7 @@ from ..utils.exceptions.site_exceptions import UnSupportedSiteError, NotAProduct
 from ..utils.task_manager import TaskManager, Log, LogLevel
 from app.config.database import SessionLocal
 import asyncio
+from requests import Session
 
 
 def grab_and_add_data(db: Session, product: Product, site_config: WebsiteConfig):
@@ -51,6 +52,7 @@ def run_url(url: str, save=False):
 
 async def crawl_urls(manager: TaskManager, user, urls: List[str], site_config: WebsiteConfig):
     num_urls = len(urls)
+    req_session = Session()
     with SessionLocal() as db:
         for i in range(len(urls)):
             url = urls[i]
@@ -63,7 +65,7 @@ async def crawl_urls(manager: TaskManager, user, urls: List[str], site_config: W
                 log_data['level'] = LogLevel.warning
             else:
                 try:
-                    data = parse_product_page(url, site_config)
+                    data = parse_product_page(url, site_config, req_session)
                     product = add_product(db, site_config.sitename, user, url)
                     add_product_data(db, product, data)
                     log_data['message'] = f'Data scraped and saved for url: {url}'
