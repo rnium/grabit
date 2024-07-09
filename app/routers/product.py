@@ -88,7 +88,7 @@ async def start_crawl(db: DbDependency, user: UserDependency, url: BodyUrlDepend
 @router.get('/stoptask')
 def stop_task(user: UserDependency):
     try:
-        manager.stop_task()
+        manager.stop()
     except Exception as e:
         raise HTTPException(400, str(e))
     return 'Task manager stopped'

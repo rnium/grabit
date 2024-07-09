@@ -40,7 +40,7 @@ class TaskManager:
     def is_busy(self):
         return self.__is_running
     
-    def stop_task(self):
+    def stop(self):
         if not self.is_busy:
             raise TaskManagerOff()
         self.__is_running = False
