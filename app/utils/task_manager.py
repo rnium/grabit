@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import List, Any, Callable
 from fastapi import WebSocket, WebSocketDisconnect
+from pydantic import BaseModel, Field
 from app.utils.exceptions.logging_exceptions import TaskManagerBusy, TaskManagerOff
 import inspect
 import asyncio
@@ -13,19 +14,22 @@ class LogLevel(str, enum.Enum):
 
 
 class Log:
-    def __init__(self, message: str, progress: float = 0, level: LogLevel = LogLevel.success):
+    def __init__(self, message: str, nowat: int = 0, total: int = 0, level: LogLevel = LogLevel.success):
         self.time = datetime.now(timezone.utc)
         self.message = message
-        self.progress = progress
+        self.nowat = nowat
+        self.total = total
         self.level = level
-        
+
+
     @property
     def data(self):
         return {
             'time': self.time.isoformat(),
             'message': self.message,
             'level': self.level,
-            'progress': self.progress 
+            'nowat': self.nowat,
+            'total': self.total,
         }
 
 
@@ -48,13 +52,13 @@ class TaskManager:
     async def __initiate_task(self):
         self.__is_running = True
         self.__start_time = datetime.now(timezone.utc)
-        await self.add_log(Log('Task initiated'))
+        await self.add_log(Log(message='Task initiated'))
     
     async def __finish_task(self):
         seconds_elapsed = (datetime.now(timezone.utc) - self.__start_time).total_seconds()
         self.__is_running = False
         self.__start_time = None
-        await self.add_log(Log('Task finished in {} seconds'.format(seconds_elapsed)))
+        await self.add_log(Log(message='Task finished in {} seconds'.format(seconds_elapsed)))
     
     async def execute_task(self, executable: Callable, *args, **kwargs):
         if self.is_busy:
@@ -70,7 +74,8 @@ class TaskManager:
         self.__connections.append(socket)
     
     def remove_socket(self, socket: WebSocket):
-        self.__connections.remove(socket)
+        if socket in self.__connections:
+            self.__connections.remove(socket)
         
     def get_data(self, log: Log):
         return {

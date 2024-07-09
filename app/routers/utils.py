@@ -50,22 +50,27 @@ def run_url(url: str, save=False):
 
 
 async def crawl_urls(manager: TaskManager, user, urls: List[str], site_config: WebsiteConfig):
+    num_urls = len(urls)
     with SessionLocal() as db:
-        for url in urls:
+        for i in range(len(urls)):
+            url = urls[i]
+            log_data = {'total': num_urls, 'nowat': i+1}
             if not manager.is_busy:
                 return
             prev_product = db.query(Product).filter(Product.url == url).first()
             if prev_product:
-                await manager.add_log(Log(f'Page aready scraped for url: {url}', level=LogLevel.warning))
-                continue
-            try:
-                data = parse_product_page(url, site_config)
-                product = add_product(db, site_config.sitename, user, url)
-                add_product_data(db, product, data)
-            except Exception as e:
-                await manager.add_log(Log(f'Error: {str(e)} | url: {url}', level=LogLevel.error))
-                continue
-            await manager.add_log(Log(f'Data scraped and saved for url: {url}'))
+                log_data['message'] = f'Page aready scraped for url: {url}'
+                log_data['level'] = LogLevel.warning
+            else:
+                try:
+                    data = parse_product_page(url, site_config)
+                    product = add_product(db, site_config.sitename, user, url)
+                    add_product_data(db, product, data)
+                    log_data['message'] = f'Data scraped and saved for url: {url}'
+                except Exception as e:
+                    log_data['message'] = f'Error: {str(e)} | url: {url}'
+                    log_data['level'] = LogLevel.error
+            await manager.add_log(Log(**log_data))
 
 async def log_status(manager: TaskManager, log: Log):
     await manager.add_log(log)
