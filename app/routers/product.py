@@ -1,9 +1,11 @@
 from fastapi import APIRouter, HTTPException, Body, BackgroundTasks, Query, WebSocket, WebSocketDisconnect
+from fastapi.responses import StreamingResponse
 from pydantic import HttpUrl, ValidationError
 from app.dependencies import DbDependency
 from typing import Annotated
 from typing import List
-from app.scraping.websites import get_site_config
+import httpx
+from io import BytesIO
 from app.scraping.parse_xml import parse_sitemap_xml
 from app.dependencies import UserDependency, BodyUrlDependency
 from app.crud import products as prod_crud
@@ -51,15 +53,31 @@ def get_product(db: DbDependency, pk: int):
 
 
 @router.get('/data')
-def product_data(db: DbDependency, q: str = Query()):
-    if q.isdigit():
-        return prod_crud.get_product_data(db, int(q))
+def product_data(db: DbDependency, query: Annotated[str, Query()]):
+    if query.isdigit():
+        return prod_crud.get_product_data(db, int(query))
     else:
         try:
-            HttpUrl(q)
+            HttpUrl(query)
         except ValidationError:
             raise HTTPException(400, 'Query should be a valid url or an id')
-        return prod_crud.get_product_data_from_url(db, q)
+        return prod_crud.get_product_data_from_url(db, query)
+
+
+@router.get('/getimage')
+async def get_image_from_url(url: Annotated[HttpUrl, Query()]):
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.get(str(url))
+            res.raise_for_status()
+            return StreamingResponse(BytesIO(res.content), media_type=res.headers.get('content-type'))
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            res.status_code,
+            f'Error for url: {url}'
+        )
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=400, detail=f"An error occurred while requesting {url}: {e}")
 
 
 @router.post('/testrun')
