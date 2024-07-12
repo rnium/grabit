@@ -8,7 +8,7 @@ def common_formatter(raw_price: str):
             price_str = price_str.replace(c, '')
     p = re.compile(r'(\d+(\.\d*)?|\.\d+)')
     mat = p.search(price_str)
-    return float(mat.group())
+    return float(mat.group()) if mat else 0
 
 def bd_price_formatter1(raw_price: str):
     # use case (startech): 66,500৳68,500৳ 

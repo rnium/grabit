@@ -28,9 +28,10 @@ def initiate_and_grab_data(db: Session, user: User, url: str) -> Tuple[Product, 
     site_config = get_site_config(url)
     if not site_config:
         raise UnSupportedSiteError()
-    prod = add_product(db, site_config.sitename, user, url)
-    grab_and_add_data(db, prod, site_config)
-    return prod, True
+    prod_data = parse_product_page(url, site_config)
+    product = add_product(db, site_config.sitename, user, url)
+    add_product_data(db, product, prod_data)
+    return product, True
 
 
 def run_url(url: str, save=False):

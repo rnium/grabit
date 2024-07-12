@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app.models import Product, User
 from app.schemas.product import ProductData
 from fastapi import HTTPException
@@ -51,7 +52,17 @@ def get_product_data_from_url(db: Session, url: str):
 
 
 def search_product(db: Session, query):
-    products = db.query(Product).filter(Product.title.ilike(f"%{query}%")).all()
+    products = db.query(Product).filter(
+        or_(
+            Product.title.ilike(f"%{query}%"),
+            Product.url == query
+        )
+    ).all()
     if not products:
         raise HTTPException(404, 'Products not found with the given query')
     return products
+
+def delete_product(db: Session, pk):
+    product = get_product(db, pk)
+    db.delete(product)
+    db.commit()

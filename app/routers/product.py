@@ -50,6 +50,12 @@ def search_product(db: DbDependency, query: Annotated[str, Query()]):
 @router.get('/get/{pk}', response_model=prod_schema.Product)
 def get_product(db: DbDependency, pk: int):
     return prod_crud.get_product(db, pk)
+    
+
+@router.get('/delete/{pk}')
+def delete_product(db: DbDependency, pk: int, user: UserDependency):
+    prod_crud.delete_product(db, pk)
+    return "Deleted"
 
 
 @router.get('/data')
