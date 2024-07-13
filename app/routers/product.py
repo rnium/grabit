@@ -52,7 +52,7 @@ def get_product(db: DbDependency, pk: int):
     return prod_crud.get_product(db, pk)
     
 
-@router.get('/delete/{pk}')
+@router.delete('/delete/{pk}')
 def delete_product(db: DbDependency, pk: int, user: UserDependency):
     prod_crud.delete_product(db, pk)
     return "Deleted"
@@ -100,7 +100,7 @@ def add_product(db: DbDependency, user: UserDependency, url: BodyUrlDependency, 
     if created:
         bgtask.add_task(log_status, manager, Log(f"Product added for url: {url}"))
     else:
-        raise HTTPException(400, 'Product already added to the database')
+        raise HTTPException(400, 'Product already added to the database. id: {}'.format(prod.id))
     return prod
 
 @router.post('/crawlxml')
