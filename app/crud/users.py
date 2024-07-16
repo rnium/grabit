@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from fastapi import HTTPException, Depends
 import jwt
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from app.config import settings
+from app.utils.enums import TokenType
 
 context = CryptContext(schemes=['bcrypt'], deprecated="auto")
 
@@ -30,11 +31,13 @@ def authenticate_user(db: Session, username, password):
     return False
 
 
-def get_access_token(data: dict, expiration_delta: timedelta | None = None):
+def get_user_token(tokentype: TokenType, data: dict, expiration_delta: timedelta | None = None):
     payload = data.copy()
     if not expiration_delta:
-        expiration_delta = timedelta(minutes= settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    expires = datetime.utcnow() + expiration_delta
-    payload.update({'exp': expires})
+        expiration_delta = timedelta(
+            minutes= settings.ACCESS_TOKEN_EXPIRE_MINUTES if tokentype == TokenType.access else settings.REFRESH_TOKEN_EXPIRE_MINUTES
+        )
+    expires = datetime.now(timezone.utc) + expiration_delta
+    payload.update({'exp': expires, 'tokentype': tokentype.value})
     token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return token
