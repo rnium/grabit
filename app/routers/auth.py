@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.crud.users import authenticate_user
 from app.dependencies import UserDependency
 from app.models import User
-from app.schemas.users import UserLogin, UserView
+from app.schemas.users import UserLogin, UserView, TokenRefreshRequest
 from typing import Annotated
 from .utils import get_current_user_from_refresh_token, get_user_tokens
 from app.utils.enums import TokenType
@@ -28,8 +28,8 @@ def get_token(db: DbDependency, form: Annotated[OAuth2PasswordRequestForm, Depen
     return get_user_tokens(user)
 
 
-@router.post('/refreshtoken')
-def refresh(db: DbDependency, token: Annotated[str, Body()]):
-    user = get_current_user_from_refresh_token(db, token)
+@router.post('/token/refresh')
+def refresh_tokens(db: DbDependency, token_req: TokenRefreshRequest):
+    user = get_current_user_from_refresh_token(db, token_req.refresh_token)
     return get_user_tokens(user)
     
