@@ -1,7 +1,9 @@
 import traceback
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from typing import List, Tuple
 from app.models import Product, User
+from app.config import settings
+from app.utils.enums import TokenType
 from app.scraping.product_page_parser import parse_product_page
 from app.scraping.website_schema import WebsiteConfig
 from app.scraping.websites import get_site_config
@@ -11,7 +13,10 @@ from sqlalchemy.orm import Session
 from ..utils.exceptions.site_exceptions import UnSupportedSiteError, NotAProductError
 from ..utils.task_manager import TaskManager, Log, LogLevel
 from app.config.database import SessionLocal
+from app.crud.users import get_user_token
 import asyncio
+import jwt
+from jwt.exceptions import InvalidTokenError
 from requests import Session
 
 
@@ -77,3 +82,30 @@ async def crawl_urls(manager: TaskManager, user, urls: List[str], site_config: W
 
 async def log_status(manager: TaskManager, log: Log):
     await manager.add_log(log)
+
+
+def get_current_user_from_refresh_token(db: Session, token: str):
+    invalid_token_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail='Cannot validate token',
+    )
+    try:
+        payload: dict = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        username = payload.get('username')
+        tokentype = payload.get('tokentype')
+        if not username or tokentype != TokenType.refresh:
+            raise invalid_token_exception
+        
+    except InvalidTokenError:
+        raise invalid_token_exception
+    user = db.query(User).filter(User.username == username).first()
+    if user is None:
+        raise invalid_token_exception
+    return user
+
+
+def get_user_tokens(user: User):
+    user_data = {'username': user.username, 'id': user.id}
+    access_token = get_user_token(TokenType.access, user_data)
+    refresh_token = get_user_token(TokenType.refresh, user_data)
+    return {'access_token': access_token, 'refresh_token': refresh_token, 'token_type': 'bearer'}
