@@ -7,7 +7,7 @@ from typing import List
 import httpx
 from io import BytesIO
 from app.scraping.parse_xml import parse_sitemap_xml
-from app.dependencies import UserDependency, BodyUrlDependency
+from app.dependencies import UserDependency, UrlDependency
 from app.crud import products as prod_crud
 from app.schemas import product as prod_schema
 from .utils import initiate_and_grab_data, run_url, crawl_urls, log_status
@@ -25,16 +25,6 @@ router = APIRouter(
 )
 
 manager = TaskManager()
-
-
-async def sample_task():
-    get_progress = lambda total, current: (current / total) * 100
-    count = 1
-    for i in range(10):
-        await asyncio.sleep(0.2)
-        await manager.add_log(Log(i, get_progress(len(manager.argument), count)))
-        count += 1
-    await manager.finish_task()
 
 
 @router.get('/all', response_model=List[prod_schema.Product])
@@ -87,12 +77,12 @@ async def get_image_from_url(url: Annotated[HttpUrl, Query()]):
 
 
 @router.post('/testrun')
-def test_run_using_product_url(url: Annotated[HttpUrl, Body()]):
+def test_run_using_product_url(url: UrlDependency):
     return run_url(str(url))
 
 
 @router.post('/add', response_model=prod_schema.Product)
-def add_product(db: DbDependency, user: UserDependency, url: BodyUrlDependency, bgtask: BackgroundTasks):
+def add_product(db: DbDependency, user: UserDependency, url: UrlDependency, bgtask: BackgroundTasks):
     try:
         prod, created = initiate_and_grab_data(db, user, str(url))
     except Exception as e:
@@ -103,8 +93,9 @@ def add_product(db: DbDependency, user: UserDependency, url: BodyUrlDependency, 
         raise HTTPException(400, 'Product already added to the database. id: {}'.format(prod.id))
     return prod
 
+
 @router.post('/crawlxml')
-async def start_crawl(db: DbDependency, user: UserDependency, url: BodyUrlDependency, bgtask: BackgroundTasks):
+async def start_crawl(db: DbDependency, user: UserDependency, url: UrlDependency, bgtask: BackgroundTasks):
     try:
         prod_urls, site_config = parse_sitemap_xml(str(url))
     except Exception as e:
@@ -113,6 +104,7 @@ async def start_crawl(db: DbDependency, user: UserDependency, url: BodyUrlDepend
         raise HTTPException(400, 'Taskmanager is busy')
     bgtask.add_task(manager.execute_task, crawl_urls, manager, user, prod_urls, site_config)
     return 'Crawling started'
+
 
 @router.get('/stoptask')
 def stop_task(user: UserDependency):
