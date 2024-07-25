@@ -4,6 +4,7 @@ from sqlalchemy import func
 from app.dependencies import DbDependency
 from app.routers import auth, product
 from app.scraping.websites import site_list
+import os
 
 app = FastAPI(
     title='GrabIT',
@@ -21,6 +22,11 @@ allowed_origins = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
 ]
+
+
+if remote:=os.getenv('CORS_ALLOW_HOST'):
+    allowed_origins.append(remote)
+
 
 app.add_middleware(
     CORSMiddleware,
