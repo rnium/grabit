@@ -2,7 +2,7 @@ from .config.database import SessionLocal
 from typing import Annotated
 from pydantic import HttpUrl
 from sqlalchemy.orm import Session
-from fastapi import Depends, HTTPException, status, Body
+from fastapi import Depends, HTTPException, status, Form
 from fastapi.security import OAuth2PasswordBearer
 from .config import settings
 from app.models import User
@@ -44,4 +44,4 @@ def get_current_user(db: DbDependency, token: Annotated[str, Depends(oauth2_sche
 
 UserDependency = Annotated[User, Depends(get_current_user)]
 
-BodyUrlDependency = Annotated[HttpUrl, Body()]
+UrlDependency = Annotated[HttpUrl, Form()]
