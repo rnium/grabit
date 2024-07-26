@@ -1,9 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func
 from app.dependencies import DbDependency
 from app.routers import auth, product
 from app.scraping.websites import site_list
+from app.config.settings import BASE_DIR
 import os
 
 app = FastAPI(
@@ -36,7 +39,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get('/')
-def root():
-    sites = [{site['name']: site['urlpatterns']}for site in site_list]
-    return {'message': 'Welcome to GrabFast', 'available_websites': sites}
+
+@app.get('/{full_path:path}')
+async def root(full_path: str):
+    if full_path == '':
+        return FileResponse(BASE_DIR / 'frontend' / 'index.html')
+    file_path = BASE_DIR / 'frontend' / full_path
+    if file_path.exists() and file_path.is_file():
+        return FileResponse(file_path)
+    else:
+        return HTTPException(status_code=404)
