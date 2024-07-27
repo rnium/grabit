@@ -64,13 +64,13 @@ class TaskManager:
         if self.is_busy:
             raise TaskManagerBusy
         await self.__initiate_task()
-        if inspect.iscoroutinefunction(executable):
-            try:
+        try:
+            if inspect.iscoroutinefunction(executable):
                 await executable(*args, *kwargs)
-            except Exception as e:
-                self.add_log(Log(message='An unexpected error occurred. Details: {}'.format(str(e)), level=LogLevel.error))
-        else:
-            executable(*args, *kwargs)
+            else:
+                executable(*args, *kwargs)   
+        except Exception as e:
+            self.add_log(Log(message='An unexpected error occurred. Details: {}'.format(str(e)), level=LogLevel.error))
         await self.__finish_task()
     
     def add_socket(self, socket: WebSocket):
