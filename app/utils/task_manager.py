@@ -65,7 +65,10 @@ class TaskManager:
             raise TaskManagerBusy
         await self.__initiate_task()
         if inspect.iscoroutinefunction(executable):
-            await executable(*args, *kwargs)
+            try:
+                await executable(*args, *kwargs)
+            except Exception as e:
+                self.add_log(Log(message='An unexpected error occurred. Details: {}'.format(str(e)), level=LogLevel.error))
         else:
             executable(*args, *kwargs)
         await self.__finish_task()
