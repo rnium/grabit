@@ -38,7 +38,7 @@ class TaskManager:
         self.__is_running = False
         self.__start_time = None
         self.__connections: List[WebSocket] = []
-        self.__log_queue = asyncio.Queue(10000)
+        self.__log_queue = asyncio.Queue(50)
 
     @property
     def is_busy(self):
@@ -100,6 +100,8 @@ class TaskManager:
                 self.remove_socket(socket)
     
     async def add_log(self, log: Log):
+        if self.__log_queue.full():
+            await self.__log_queue.get()
         await self.__log_queue.put(log)
         await self.send_logs()
         await asyncio.sleep(0.1)

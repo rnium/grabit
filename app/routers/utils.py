@@ -14,6 +14,7 @@ from ..utils.exceptions.site_exceptions import UnSupportedSiteError, NotAProduct
 from ..utils.task_manager import TaskManager, Log, LogLevel
 from app.config.database import SessionLocal
 from app.crud.users import get_user_token
+from app.crud.products import get_products
 import asyncio
 import jwt
 from jwt.exceptions import InvalidTokenError
@@ -60,25 +61,26 @@ async def crawl_urls(manager: TaskManager, user, urls: List[str], site_config: W
     num_urls = len(urls)
     req_session = Session()
     with SessionLocal() as db:
-        for i in range(len(urls)):
-            url = urls[i]
-            log_data = {'total': num_urls, 'nowat': i+1}
+        existing_urls = set([prod.url for prod in get_products(db)])
+        crawlable_urls = list(set(urls) - existing_urls)
+        num_exclusions = len(urls) - len(crawlable_urls)
+        if num_exclusions > 0:
+            await manager.add_log(Log(f"Excluding {num_exclusions} urls as these are already crawled.", level=LogLevel.warning)) 
+        for i in range(len(crawlable_urls)):
+            url = crawlable_urls[i]
+            log_data = {'total': num_urls, 'nowat': i+1+num_exclusions}
             if not manager.is_busy:
                 return
-            prev_product = db.query(Product).filter(Product.url == url).first()
-            if prev_product:
-                log_data['message'] = f'Page aready scraped for url: {url}'
-                log_data['level'] = LogLevel.warning
-            else:
-                try:
-                    data = parse_product_page(url, site_config, req_session)
-                    product = add_product(db, site_config.sitename, user, url)
-                    add_product_data(db, product, data)
-                    log_data['message'] = f'Data scraped and saved for url: {url}'
-                except Exception as e:
-                    log_data['message'] = f'Error: {str(e)} | url: {url}'
-                    log_data['level'] = LogLevel.error
+            try:
+                data = parse_product_page(url, site_config, req_session)
+                product = add_product(db, site_config.sitename, user, url)
+                add_product_data(db, product, data)
+                log_data['message'] = f'Data scraped and saved for url: {url}'
+            except Exception as e:
+                log_data['message'] = f'Error: {str(e)} | url: {url}'
+                log_data['level'] = LogLevel.error
             await manager.add_log(Log(**log_data))
+
 
 async def log_status(manager: TaskManager, log: Log):
     await manager.add_log(log)
