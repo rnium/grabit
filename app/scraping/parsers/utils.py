@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 
-def select_with_raw_selector(soup: BeautifulSoup, raw_selector: str):
+def select_with_raw_selector(soup: BeautifulSoup, raw_selector: str, many=False):
     """splits the raw selector with pipe and returns the first non-None selection
     Args:
         raw_selector: its the raw string from yaml config, 
@@ -8,9 +8,10 @@ def select_with_raw_selector(soup: BeautifulSoup, raw_selector: str):
     """
     selectors = raw_selector.split('|')
     for s in selectors:
-        selection = soup.select_one(s)
-        print(s, selection, flush=1)
+        s = s.strip()
+        selection = soup.select(s) if many else soup.select_one(s)
         if selection:
             return selection
-    return None
+    return [] if many else None
+        
     

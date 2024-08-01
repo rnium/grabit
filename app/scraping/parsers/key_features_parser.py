@@ -3,14 +3,24 @@ import sys
 import io
 from ..website_schema import WebsiteConfig
 from app.utils.exceptions.selector_exceptions import KeyFeatureSelectorError
+from .utils import select_with_raw_selector
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 def parse_keyfeatures(soup: BeautifulSoup, site_config: WebsiteConfig):
-    container = soup.select_one(site_config.product.key_feature.container_selector)
+    container = select_with_raw_selector(
+        soup, 
+        site_config.product.key_feature.container_selector
+    )
+    
     if container is None:
         raise KeyFeatureSelectorError(site_config.product.key_feature.container_selector)
-    features_elem = container.find_all(site_config.product.key_feature.item_selector)
+    
+    features_elem = select_with_raw_selector(
+        container, site_config.product.key_feature.item_selector,
+        many=True
+    )
+    
     features_dict = {}
     features_arr = []
     for f in features_elem:
