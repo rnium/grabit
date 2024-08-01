@@ -38,7 +38,7 @@ class TaskManager:
         self.__is_running = False
         self.__start_time = None
         self.__connections: List[WebSocket] = []
-        self.__log_queue = asyncio.Queue(100)
+        self.__log_queue = asyncio.Queue(10000)
 
     @property
     def is_busy(self):

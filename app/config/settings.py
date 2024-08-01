@@ -7,7 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv()
 
 
-DB_URL = os.getenv('DB_URL', 'sqlite:///./db.sqlite3')
+DB_URL = os.getenv('DB_URL', 'postgresql://postgres:postgres@db/postgres')
 DB_CONNECT_ARGS = {}
 if DB_URL.startswith('sqlite'):
     DB_CONNECT_ARGS['check_same_thread'] = False
