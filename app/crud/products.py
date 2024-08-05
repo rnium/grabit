@@ -59,7 +59,7 @@ def search_product(db: Session, query):
         )
     ).all()
     if not products:
-        raise HTTPException(404, 'Products not found with the given query')
+        return []
     return products
 
 def delete_product(db: Session, pk):
