@@ -2,7 +2,7 @@ services:
   db:
     restart: always
     image: postgres:15-alpine
-    container_name: Postgres
+    container_name: grabit_db
     volumes:
       - ./pgdata:/var/lib/postgresql/data
     ports:
@@ -15,7 +15,7 @@ services:
   app:
     restart: always
     image: grabit
-    container_name: App
+    container_name: grabit
     volumes:
       - .:/app
     build: .
