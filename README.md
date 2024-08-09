@@ -66,10 +66,11 @@ To scrape data from a website using GrabIT, you need to configure each target we
 7. Product images container
 8. Specification table
 9. Specification container
-10. Specification item
-11. Specification key
-12. Specification value
-13. Product description
+10. Specification container heading
+11. Specification item
+12. Specification key
+13. Specification value
+14. Product description
 
 ### Configuration Example for Ryans:
 
