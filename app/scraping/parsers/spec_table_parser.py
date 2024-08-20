@@ -8,7 +8,7 @@ def parse_tables(soup: BeautifulSoup, site_config: WebsiteConfig):
     table_container = select_with_raw_selector(soup, table_config.table_selector)
     if not table_container:
         raise SpecTableSelectorError(table_config.table_selector)
-    heading_texts = [h.text.strip() for h in table_container.select(table_config.heading_selector)]
+    heading_texts = [h.text.strip() for h in select_with_raw_selector(table_container, table_config.heading_selector, many=True)]
     spec_groups = []
     
     groups = select_with_raw_selector(table_container, table_config.container_selector, many=True)
@@ -23,6 +23,8 @@ def parse_tables(soup: BeautifulSoup, site_config: WebsiteConfig):
                 specs[str(key)] = str(val)
         spec_groups.append(specs)
     spec_tables = {}
-    for i in range(len(heading_texts)):
-        spec_tables[heading_texts[i]] = spec_groups[i] if i < len(spec_groups) else {}
+    for i in range(max(len(heading_texts), len(spec_groups))):
+        label = heading_texts[i] if i < len(heading_texts) else '<Undefined Title>'
+        value = spec_groups[i] if i < len(spec_groups) else {}
+        spec_tables[label] = value
     return spec_tables
