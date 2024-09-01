@@ -1,4 +1,4 @@
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+[![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://choosealicense.com/licenses/mit/)
 # GrabIT: IT Product Data Scraper
 
 GrabIT is a simple FastAPI based web scraping tool designed to scrape and store IT product data from various e-commerce websites. GrabIT simplifies the data collection process while conducting market research or managing a inventory of IT products.
@@ -37,6 +37,16 @@ Go to the project directory
 
 ```bash
   cd grabit
+```
+
+
+Create .env file with the following variables
+
+```
+SECRET_KEY=
+DB_URL=
+CORS_ALLOW_HOST=
+USER_AGENT=
 ```
 
 Create your `sites.yaml` (see Site Configuration below to know how to configure sites.yaml) and Run the docker compose

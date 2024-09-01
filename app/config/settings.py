@@ -12,10 +12,11 @@ DB_CONNECT_ARGS = {}
 if DB_URL.startswith('sqlite'):
     DB_CONNECT_ARGS['check_same_thread'] = False
 
-SECRET_KEY = "71751bbc7b6adf880cc183eb76f0191fd01379b8a2a053380049ac749dbaeba4"
+SECRET_KEY = os.getenv('SECRET_KEY')
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 5
 REFRESH_TOKEN_EXPIRE_MINUTES = 1440
+REQUESTS_USER_AGENT = os.getenv('USER_AGENT')
 
 try:
     from .local_settings import *

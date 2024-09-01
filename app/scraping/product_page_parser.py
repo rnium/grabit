@@ -9,9 +9,13 @@ from app.schemas.product import ProductData
 from app.utils.exceptions.site_exceptions import NotAProductError
 from app.utils.exceptions.selector_exceptions import ProductInfoSelectorError
 from requests import Session
+from app.config.settings import REQUESTS_USER_AGENT
 
 
 def parse_product_page(url: str, site_config: WebsiteConfig, session: Session = Session()) -> ProductData:
+    session.headers.update({
+        'User-Agent': REQUESTS_USER_AGENT
+    })
     res = session.get(url)
     content = res.text
     soup = BeautifulSoup(content, 'html.parser')
