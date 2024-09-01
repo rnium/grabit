@@ -66,7 +66,7 @@ Create an user
 
 To scrape data from a website using GrabIT, you need to configure each target website in the `sites.yaml` file. GrabIT focuses on extracting data from the product pages of websites. For example, consider **Ryans**, the leading IT product retailer in Bangladesh. Below is an illustration of the sections that GrabIT can scrape from a product page on Ryans:
 
-![Ryans Product Page](https://i.ibb.co/9Z4mY8S/IMG-20240809-203209.jpg)
+![Ryans Product Page](layout.jpg)
 1. Product page container
 2. Product title
 3. Product regular/actual price
