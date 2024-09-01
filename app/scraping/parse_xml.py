@@ -4,12 +4,13 @@ from typing import List
 from pydantic import HttpUrl, ValidationError
 from app.utils.exceptions.site_exceptions import UnSupportedSiteError
 from .websites import get_site_config
+from app.config.settings import REQUESTS_USER_AGENT
 
 def parse_sitemap_xml(xml_link: str) -> List[str]:
     site_config = get_site_config(xml_link)
     if not site_config:
         raise UnSupportedSiteError()
-    res = requests.get(xml_link)
+    res = requests.get(xml_link, headers={'User-Agent': REQUESTS_USER_AGENT})
     dom = minidom.parseString(res.text)
     locs = dom.getElementsByTagName('loc')
     links = []
