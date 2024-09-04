@@ -14,6 +14,7 @@ from .utils import initiate_and_grab_data, run_url, crawl_urls, log_status
 from ..utils.task_manager import TaskManager, Log
 from ..utils.exceptions.site_exceptions import UnSupportedSiteError
 from app.utils.exceptions.logging_exceptions import TaskManagerBusy, TaskManagerOff
+from app.config.settings import REQUESTS_USER_AGENT
 
 
 import asyncio
@@ -64,13 +65,16 @@ def product_data(db: DbDependency, query: Annotated[str, Query()]):
 async def get_image_from_url(url: Annotated[HttpUrl, Query()]):
     try:
         async with httpx.AsyncClient() as client:
-            res = await client.get(str(url))
+            headers = {
+                'User-Agent': REQUESTS_USER_AGENT
+            }
+            res = await client.get(str(url), headers=headers, follow_redirects=True)
             res.raise_for_status()
             return StreamingResponse(BytesIO(res.content), media_type=res.headers.get('content-type'))
     except httpx.HTTPStatusError as e:
         raise HTTPException(
             res.status_code,
-            f'Error for url: {url}'
+            f'Error for url: {url}, Details: {str(e)}'
         )
     except httpx.RequestError as e:
         raise HTTPException(status_code=400, detail=f"An error occurred while requesting {url}: {e}")
